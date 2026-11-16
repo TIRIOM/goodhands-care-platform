@@ -1,0 +1,30 @@
+# 로컬 개발용: MariaDB + Good Hands 백엔드 (프론트 앱이 붙는 서버)
+services:
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: goodhands
+      MARIADB_USER: goodhands
+      MARIADB_PASSWORD: goodhands
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=+09:00"]
+    ports: ["3306:3306"]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 20
+    volumes: [db-data:/var/lib/mysql]
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: mysql+pymysql://goodhands:goodhands@db:3306/goodhands?charset=utf8mb4
+      SECRET_KEY: local-dev-secret
+      BASE_URL: http://localhost:10007
+      TZ: Asia/Seoul
+    ports: ["10007:10007"]
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  db-data:
